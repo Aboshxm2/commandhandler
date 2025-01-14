@@ -2,6 +2,7 @@ package commandhandler
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -42,12 +43,12 @@ func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []s
 		if resolver, ok := r.MessageResolvers[opt.Type]; ok {
 			v, err := resolver(ctx, arg)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to resolve option '%s': %w", opt.Name, err)
 			}
 
 			opts[opt.Name] = v
 		} else {
-			return nil, errors.New("")
+			return nil, fmt.Errorf("no resolver found for option type '%v'", opt.Type)
 		}
 	}
 	return opts, nil
@@ -66,11 +67,11 @@ func (r SimpleResolver) ResolveSlashCommandOptions(cmd Command, ctx Context, arg
 			if resolver, ok := r.SlashCommandResolvers[opt.Type]; ok {
 				v, err := resolver(ctx, *found)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to resolve option '%s': %w", opt.Name, err)
 				}
 				opts[opt.Name] = v
 			} else {
-				return nil, errors.New("")
+				return nil, fmt.Errorf("no resolver found for option type '%v'", opt.Type)
 			}
 		} else {
 			opts[opt.Name] = nil
@@ -171,7 +172,7 @@ func roleResolver(ctx Context, arg string) (any, error) {
 				return role, nil
 			}
 		}
-		return nil, errors.New("")
+		return nil, fmt.Errorf("role with ID '%s' not found in guild", arg)
 	}
 	return v, nil
 }

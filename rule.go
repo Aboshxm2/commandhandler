@@ -17,7 +17,7 @@ type Required struct{}
 
 func (Required) Test(value any) error {
 	if value == nil {
-		return errors.New("")
+		return errors.New("value is required but was not provided")
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func (r Choices) Test(value any) error {
 			return nil
 		}
 	}
-	return errors.New("")
+	return fmt.Errorf("value '%v' is not a valid choice", value)
 }
 
 type Max struct {
@@ -62,7 +62,7 @@ func (r Max) Test(value any) error {
 	default:
 		panic("Value type should be int, float64 or string")
 	}
-	return fmt.Errorf("Value is greater than %d", r.Max)
+	return fmt.Errorf("value exceeds the maximum allowed of %d", r.Max)
 }
 
 type Min struct {
@@ -86,27 +86,36 @@ func (r Min) Test(value any) error {
 	default:
 		panic("Value type should be int, float64 or string")
 	}
-	return fmt.Errorf("Value is smaller than %d", r.Min)
+	return fmt.Errorf("value is less than the minimum allowed of %d", r.Min)
 }
 
 type Uppercase struct{}
 
-func (Uppercase) Test(value any) bool {
-	return value.(string) == strings.ToUpper(value.(string))
+func (Uppercase) Test(value any) error {
+	if value.(string) == strings.ToUpper(value.(string)) {
+		return nil
+	}
+	return errors.New("value must be uppercase")
 }
 
 type Lowercase struct{}
 
-func (Lowercase) Test(value any) bool {
-	return value.(string) == strings.ToLower(value.(string))
+func (Lowercase) Test(value any) error {
+	if value.(string) == strings.ToLower(value.(string)) {
+		return nil
+	}
+	return errors.New("value must be lowercase")
 }
 
 type ChannelType struct {
 	Types []discordgo.ChannelType
 }
 
-func (r ChannelType) Test(value any) bool {
-	return slices.Contains(r.Types, value.(*discordgo.Channel).Type)
+func (r ChannelType) Test(value any) error {
+	if slices.Contains(r.Types, value.(*discordgo.Channel).Type) {
+		return nil
+	}
+	return fmt.Errorf("channel type '%v' is not allowed", value.(*discordgo.Channel).Type)
 }
 
 func Validate(opts []Option, values map[string]any) (errors []struct {

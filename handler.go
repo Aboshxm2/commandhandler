@@ -2,6 +2,7 @@ package commandhandler
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -21,6 +22,8 @@ func NewHandler(prefix string, cmds []Command, resolver Resolver) Handler {
 	}
 }
 
+var errNotFound = errors.New("command not found")
+
 type SimpleHandler struct {
 	resolver Resolver
 	prefix   string
@@ -38,24 +41,28 @@ func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.Messag
 
 	args := getArgs(m.Content, h.prefix)
 
-	cmd, args, err := findCommand(h.cmds, args)
-
-	if err != nil {
-		return
-	}
+	cmd, args, err := findCommand(h.cmds, args, 1)
 
 	ctx := MessageToContext(s, m.Message)
+
+	if err != nil {
+		if err != errNotFound {
+			ctx.Reply("Error: " + err.Error())
+		}
+		return
+	}
 
 	opts, err := h.resolver.ResolveMessageOptions(cmd, ctx, args)
 
 	if err != nil {
+		ctx.Reply("Error: " + err.Error())
 		return
 	}
 
 	errors := Validate(cmd.Options, opts)
 
 	if len(errors) > 0 {
-
+		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", errors[0].Opt.Name, errors[0].Err))
 		return
 	}
 
@@ -70,6 +77,7 @@ func (h SimpleHandler) OnInteractionCreate(s *discordgo.Session, i *discordgo.In
 	ctx := SlashCommandToContext(s, i)
 	opts, err := h.resolver.ResolveSlashCommandOptions(cmd, ctx, i.ApplicationCommandData())
 	if err != nil {
+		ctx.Reply("Error: " + err.Error())
 		return
 	}
 	cmd.Run(ctx, opts)
@@ -90,14 +98,15 @@ func getArgs(message string, prefix string) []string {
 	return args
 }
 
-func findCommand(cmds []Command, args []string) (Command, []string, error) {
+func findCommand(cmds []Command, args []string, depth int) (Command, []string, error) {
 	for _, cmd := range cmds {
 		if cmd.Name == args[0] || slices.Contains(cmd.Aliases, args[0]) {
 			if len(cmd.Subs) > 0 {
 				if len(args) > 1 {
-					findCommand(cmd.Subs, args[1:])
+					depth++
+					findCommand(cmd.Subs, args[1:], depth)
 				} else {
-					return Command{}, nil, errors.New("")
+					return Command{}, nil, errors.New("subcommand expected but not provided")
 				}
 			} else {
 				return cmd, args, nil
@@ -105,7 +114,11 @@ func findCommand(cmds []Command, args []string) (Command, []string, error) {
 		}
 	}
 
-	return Command{}, nil, errors.New("")
+	if depth != 1 {
+		return Command{}, nil, fmt.Errorf("subcommand '%s' does not exist", args[0])
+	}
+
+	return Command{}, nil, errNotFound
 }
 
 func findSlashCommandSubCommand(cmds []Command, i *discordgo.InteractionCreate) (Command, error) {
@@ -124,5 +137,5 @@ func findSlashCommandSubCommand(cmds []Command, i *discordgo.InteractionCreate) 
 		}
 	}
 
-	return Command{}, errors.New("")
+	return Command{}, errNotFound
 }
