@@ -1,7 +1,6 @@
 package commandhandler
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
