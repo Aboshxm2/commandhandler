@@ -109,7 +109,7 @@ func findCommand(cmds []Command, args []string, depth int) (Command, []string, e
 					return Command{}, nil, errors.New("subcommand expected but not provided")
 				}
 			} else {
-				return cmd, args, nil
+        return cmd, args[1:], nil
 			}
 		}
 	}
