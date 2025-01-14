@@ -57,7 +57,7 @@ func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOpti
 				fallthrough
 			case IntegerOptionType:
 				f := float64(r.Max)
-				o.MinValue = &f
+				o.MaxValue = f
 			}
 		case Min:
 			switch opt.Type {
