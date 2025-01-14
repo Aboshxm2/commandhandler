@@ -31,9 +31,7 @@ type SimpleResolver struct {
 func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []string) (map[string]any, error) {
 	opts := map[string]any{}
 	for i, opt := range cmd.Options {
-		ok := len(args)-1 < i
-
-		if !ok {
+		if len(args)-1 < i {
 			opts[opt.Name] = nil
 			continue
 		}
