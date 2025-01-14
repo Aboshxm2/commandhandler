@@ -25,7 +25,7 @@ func (Required) Test(value any) error {
 
 type Choice struct {
 	Name  string
-	Value string
+	Value any
 }
 
 type Choices struct {
