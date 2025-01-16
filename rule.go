@@ -106,6 +106,9 @@ func Validate(opts []Option, values map[string]any) (errors []struct {
 }) {
 	for _, opt := range opts {
 		for _, rule := range opt.Rules {
+			if values[opt.Name] == nil {
+				continue
+			}
 			if err := rule.Test(values[opt.Name]); err != nil {
 				errors = append(errors, struct {
 					Opt Option
