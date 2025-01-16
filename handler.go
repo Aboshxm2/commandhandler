@@ -59,13 +59,13 @@ func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.Messag
 		return
 	}
 
-	errors := Validate(cmd.Options, opts)
+	opt, err := Validate(cmd.Options, opts)
 
-	if len(errors) > 0 {
-		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", errors[0].Opt.Name, errors[0].Err))
+	if err != nil {
+		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", opt.Name, err))
 		return
 	}
-
+  
 	cmd.Run(ctx, opts)
 }
 
@@ -84,10 +84,10 @@ func (h SimpleHandler) OnInteractionCreate(s *discordgo.Session, i *discordgo.In
 		return
 	}
 
-	errors := Validate(cmd.Options, opts)
+	opt, err := Validate(cmd.Options, opts)
 
-	if len(errors) > 0 {
-		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", errors[0].Opt.Name, errors[0].Err))
+	if err != nil {
+		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", opt.Name, err))
 		return
 	}
 
