@@ -48,7 +48,7 @@ type Max struct {
 func (r Max) Test(value any) error {
 	switch v := value.(type) {
 	case int:
-		if v < r.Max {
+		if v <= r.Max {
 			return nil
 		}
 	case float64:
@@ -72,7 +72,7 @@ type Min struct {
 func (r Min) Test(value any) error {
 	switch v := value.(type) {
 	case int:
-		if v > r.Min {
+		if v >= r.Min {
 			return nil
 		}
 	case float64:
