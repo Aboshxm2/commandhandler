@@ -71,15 +71,26 @@ func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.Messag
 
 func (h SimpleHandler) OnInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	cmd, err := findSlashCommandSubCommand(h.cmds, i)
+
 	if err != nil {
 		return
 	}
+
 	ctx := SlashCommandToContext(s, i)
+
 	opts, err := h.resolver.ResolveSlashCommandOptions(cmd, ctx, i.ApplicationCommandData())
 	if err != nil {
 		ctx.Reply("Error: " + err.Error())
 		return
 	}
+
+	errors := Validate(cmd.Options, opts)
+
+	if len(errors) > 0 {
+		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", errors[0].Opt.Name, errors[0].Err))
+		return
+	}
+
 	cmd.Run(ctx, opts)
 }
 
