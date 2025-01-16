@@ -65,7 +65,7 @@ func resolveMessageOptionChoices(opt Option, arg string) (string, error) {
 		if c.Name == arg {
 			switch v := c.Value.(type) {
 			case int64:
-				arg = strconv.Itoa(v)
+				arg = strconv.FormatInt(v, 10)
 			case float64:
 				arg = strconv.FormatFloat(v, 'f', -1, 64)
 			case string:
@@ -218,7 +218,6 @@ func slashCommandStringResolver(ctx Context, arg discordgo.ApplicationCommandInt
 func slashCommandBooleanResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
 	return arg.BoolValue(), nil
 }
-
 
 func slashCommandUserResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
 	return userResolver(ctx, arg.Value.(string))

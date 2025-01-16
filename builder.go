@@ -47,26 +47,21 @@ func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOpti
 		switch r := rule.(type) {
 		case Required:
 			o.Required = true
-		case Max:
-			switch opt.Type {
-			case StringOptionType:
-				o.MinLength = &r.Max
-			case FloatOptionType:
-				fallthrough
-			case IntegerOptionType:
-				f := float64(r.Max)
-				o.MaxValue = f
-			}
-		case Min:
-			switch opt.Type {
-			case StringOptionType:
-				o.MinLength = &r.Min
-			case FloatOptionType:
-				fallthrough
-			case IntegerOptionType:
-				f := float64(r.Min)
-				o.MinValue = &f
-			}
+		case MaxInt:
+			o.MaxValue = float64(r.Max)
+		case MaxFloat:
+			o.MaxValue = r.Max
+		case MaxString:
+			o.MaxLength = r.Max
+		case MinInt:
+			v := float64(r.Min)
+			o.MinValue = &v
+		case MinFloat:
+			v := r.Min
+			o.MinValue = &v
+		case MinString:
+			v := r.Min
+			o.MinLength = &v
 		}
 	}
 

@@ -23,53 +23,70 @@ func (Required) Test(value any) error {
 	return nil
 }
 
-type Max struct {
+type MaxInt struct {
 	Max int64
 }
 
-func (r Max) Test(value any) error {
-	switch v := value.(type) {
-	case int64:
-		if v <= r.Max {
-			return nil
-		}
-	case float64:
-		if int64(v) < r.Max {
-			return nil
-		}
-	case string:
-		if len(v) < int(r.Max) {
-			return nil
-		}
-	default:
-		panic("Value type should be int, float64 or string")
+func (r MaxInt) Test(value any) error {
+	if value.(int64) <= r.Max {
+		return nil
 	}
 	return fmt.Errorf("value exceeds the maximum allowed of %d", r.Max)
 }
 
-type Min struct {
+type MaxFloat struct {
+	Max float64
+}
+
+func (r MaxFloat) Test(value any) error {
+	if value.(float64) <= r.Max {
+		return nil
+	}
+	return fmt.Errorf("value exceeds the maximum allowed of %.2f", r.Max)
+}
+
+type MaxString struct {
+	Max int
+}
+
+func (r MaxString) Test(value any) error {
+	if len(value.(string)) <= r.Max {
+		return nil
+	}
+	return fmt.Errorf("string length exceeds the maximum allowed of %d", r.Max)
+}
+
+type MinInt struct {
 	Min int64
 }
 
-func (r Min) Test(value any) error {
-	switch v := value.(type) {
-	case int64:
-		if v >= r.Min {
-			return nil
-		}
-	case float64:
-		if int64(v) > r.Min {
-			return nil
-		}
-	case string:
-		if len(v) > int(r.Min) {
-			return nil
-		}
-	default:
-    fmt.Printf("%T\n", v)
-		panic("Value type should be int, float64 or string")
+func (r MinInt) Test(value any) error {
+	if value.(int64) >= r.Min {
+		return nil
 	}
 	return fmt.Errorf("value is less than the minimum allowed of %d", r.Min)
+}
+
+type MinFloat struct {
+	Min float64
+}
+
+func (r MinFloat) Test(value any) error {
+	if value.(float64) >= r.Min {
+		return nil
+	}
+	return fmt.Errorf("value is less than the minimum allowed of %.2f", r.Min)
+}
+
+type MinString struct {
+	Min int
+}
+
+func (r MinString) Test(value any) error {
+	if len(value.(string)) >= r.Min {
+		return nil
+	}
+	return fmt.Errorf("string length is less than the minimum allowed of %d", r.Min)
 }
 
 type Uppercase struct{}
