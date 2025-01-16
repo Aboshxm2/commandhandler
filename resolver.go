@@ -37,6 +37,12 @@ func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []s
 		}
 
 		arg := args[i]
+
+		arg, err := resolveMessageOptionChoices(opt, arg)
+		if err != nil {
+			return nil, err
+		}
+
 		if resolver, ok := r.MessageResolvers[opt.Type]; ok {
 			v, err := resolver(ctx, arg)
 			if err != nil {
@@ -49,6 +55,26 @@ func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []s
 		}
 	}
 	return opts, nil
+}
+
+func resolveMessageOptionChoices(opt Option, arg string) (string, error) {
+	for _, c := range opt.Choices {
+		if c.Name == arg {
+			switch v := c.Value.(type) {
+			case int:
+				arg = strconv.Itoa(v)
+			case float64:
+				arg = strconv.FormatFloat(v, 'f', -1, 64)
+			case string:
+				arg = v
+			default:
+				panic(fmt.Sprintf("choice value cannot be of type %T", v))
+			}
+			return arg, nil
+		}
+	}
+
+	return "", fmt.Errorf("value '%v' is not a valid choice", arg)
 }
 
 func (r SimpleResolver) ResolveSlashCommandOptions(cmd Command, ctx Context, args discordgo.ApplicationCommandInteractionData) (map[string]any, error) {

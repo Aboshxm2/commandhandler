@@ -13,9 +13,15 @@ const (
 	RoleOptionType    OptionType = 7
 )
 
+type Choice struct {
+	Name  string
+	Value any
+}
+
 type Option struct {
 	Name        string
 	Type        OptionType
 	Description string
+	Choices     []Choice
 	Rules       []Rule
 }

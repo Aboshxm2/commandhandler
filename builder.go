@@ -36,19 +36,17 @@ func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOpti
 		Type:        b.optionsTypeMap[opt.Type],
 	}
 
+	for _, c := range opt.Choices {
+		o.Choices = append(o.Choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  c.Name,
+			Value: c.Value,
+		})
+	}
+
 	for _, rule := range opt.Rules {
 		switch r := rule.(type) {
 		case Required:
 			o.Required = true
-		case Choices:
-			choices := []*discordgo.ApplicationCommandOptionChoice{}
-			for _, choice := range r.Choices {
-				choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
-					Name:  choice.Name,
-					Value: choice.Value,
-				})
-			}
-			o.Choices = choices
 		case Max:
 			switch opt.Type {
 			case StringOptionType:

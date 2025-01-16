@@ -23,24 +23,6 @@ func (Required) Test(value any) error {
 	return nil
 }
 
-type Choice struct {
-	Name  string
-	Value any
-}
-
-type Choices struct {
-	Choices []Choice
-}
-
-func (r Choices) Test(value any) error {
-	for _, c := range r.Choices {
-		if c.Value == value {
-			return nil
-		}
-	}
-	return fmt.Errorf("value '%v' is not a valid choice", value)
-}
-
 type Max struct {
 	Max int
 }
