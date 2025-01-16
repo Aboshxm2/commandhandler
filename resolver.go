@@ -122,10 +122,10 @@ func DefaultMessageResolvers() map[OptionType]MessageResolver {
 
 func DefaultSlashCommandResolvers() map[OptionType]SlashCommandResolver {
 	return map[OptionType]SlashCommandResolver{
-		StringOptionType:  slashCommandDefaultResolver,
-		IntegerOptionType: slashCommandDefaultResolver,
-		FloatOptionType:   slashCommandDefaultResolver,
-		BooleanOptionType: slashCommandDefaultResolver,
+		StringOptionType:  slashCommandStringResolver,
+		IntegerOptionType: slashCommandIntegerResolver,
+		FloatOptionType:   slashCommandFloatResolver,
+		BooleanOptionType: slashCommandBooleanResolver,
 		UserOptionType:    slashCommandUserResolver,
 		MemberOptionType:  slashCommandMemberResolver,
 		ChannelOptionType: slashCommandChannelResolver,
@@ -203,9 +203,22 @@ func roleResolver(ctx Context, arg string) (any, error) {
 	return v, nil
 }
 
-func slashCommandDefaultResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
-	return arg.Value, nil
+func slashCommandIntegerResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
+	return arg.IntValue(), nil
 }
+
+func slashCommandFloatResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
+	return arg.FloatValue(), nil
+}
+
+func slashCommandStringResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
+	return arg.StringValue(), nil
+}
+
+func slashCommandBooleanResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
+	return arg.BoolValue(), nil
+}
+
 
 func slashCommandUserResolver(ctx Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
 	return userResolver(ctx, arg.Value.(string))
