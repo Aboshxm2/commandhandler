@@ -38,9 +38,12 @@ func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []s
 
 		arg := args[i]
 
-		arg, err := resolveMessageOptionChoices(opt, arg)
-		if err != nil {
-			return nil, err
+		if len(opt.Choices) > 0 {
+			var err error
+			arg, err = resolveMessageOptionChoices(opt, arg)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if resolver, ok := r.MessageResolvers[opt.Type]; ok {
