@@ -64,7 +64,7 @@ func resolveMessageOptionChoices(opt Option, arg string) (string, error) {
 	for _, c := range opt.Choices {
 		if c.Name == arg {
 			switch v := c.Value.(type) {
-			case int:
+			case int64:
 				arg = strconv.Itoa(v)
 			case float64:
 				arg = strconv.FormatFloat(v, 'f', -1, 64)
@@ -134,7 +134,7 @@ func DefaultSlashCommandResolvers() map[OptionType]SlashCommandResolver {
 }
 
 func integerResolver(ctx Context, arg string) (any, error) {
-	return strconv.Atoi(arg)
+	return strconv.ParseInt(arg, 10, 64)
 }
 
 func floatResolver(ctx Context, arg string) (any, error) {

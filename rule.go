@@ -24,21 +24,21 @@ func (Required) Test(value any) error {
 }
 
 type Max struct {
-	Max int
+	Max int64
 }
 
 func (r Max) Test(value any) error {
 	switch v := value.(type) {
-	case int:
+	case int64:
 		if v <= r.Max {
 			return nil
 		}
 	case float64:
-		if int(v) < r.Max {
+		if int64(v) < r.Max {
 			return nil
 		}
 	case string:
-		if len(v) < r.Max {
+		if len(v) < int(r.Max) {
 			return nil
 		}
 	default:
@@ -48,24 +48,25 @@ func (r Max) Test(value any) error {
 }
 
 type Min struct {
-	Min int
+	Min int64
 }
 
 func (r Min) Test(value any) error {
 	switch v := value.(type) {
-	case int:
+	case int64:
 		if v >= r.Min {
 			return nil
 		}
 	case float64:
-		if int(v) > r.Min {
+		if int64(v) > r.Min {
 			return nil
 		}
 	case string:
-		if len(v) > r.Min {
+		if len(v) > int(r.Min) {
 			return nil
 		}
 	default:
+    fmt.Printf("%T\n", v)
 		panic("Value type should be int, float64 or string")
 	}
 	return fmt.Errorf("value is less than the minimum allowed of %d", r.Min)
