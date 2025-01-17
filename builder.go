@@ -33,7 +33,7 @@ func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOpti
 	o := discordgo.ApplicationCommandOption{
 		Name:        opt.Name,
 		Description: opt.Description,
-		Type:        b.optionsTypeMap[opt.Type],
+		Type:        b.OptionsTypeMap[opt.Type],
     Required: opt.Required,
 	}
 
