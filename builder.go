@@ -34,7 +34,7 @@ func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOpti
 		Name:        opt.Name,
 		Description: opt.Description,
 		Type:        b.OptionsTypeMap[opt.Type],
-    Required: opt.Required,
+		Required:    opt.Required,
 	}
 
 	for _, c := range opt.Choices {

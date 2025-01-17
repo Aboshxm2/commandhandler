@@ -33,9 +33,9 @@ func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []s
 	opts := map[string]any{}
 	for i, opt := range cmd.Options {
 		if len(args)-1 < i {
-      if opt.Required {
-        return nil, errors.New("value is required but not provided")
-      }
+			if opt.Required {
+				return nil, errors.New("value is required but not provided")
+			}
 			continue
 		}
 
