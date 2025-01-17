@@ -16,13 +16,52 @@ func initCommands(s *discordgo.Session) {
 
 	cmds := []commandhandler.Command{
 		{
-			Name:        "ping",
-			Description: "Simple pingpong command",
+			Name:        "choices",
+			Description: "A command that accepts 2 options with choices",
+			Options: []commandhandler.Option{
+				{
+					Name:        "option1",
+					Description: "First Option",
+					Type:        commandhandler.IntegerOptionType,
+					Choices: []commandhandler.Choice{
+						{
+							Name:  "Five",
+							Value: int64(5),
+						},
+						{
+							Name:  "Best Number",
+							Value: int64(13),
+						},
+					},
+				},
+				{
+					Name:        "option2",
+					Description: "Second Option",
+					Type:        commandhandler.StringOptionType,
+					Choices: []commandhandler.Choice{
+						{
+							Name:  "The best developer",
+							Value: "Aboshxm2",
+						},
+						{
+							Name:  "The worst developer",
+							Value: "usy4",
+						},
+					},
+				},
+			},
 			Run: func(ctx commandhandler.Context, opts map[string]any) {
-				err := ctx.Reply("pong")
+				opt1 := opts["option1"]
+				opt2 := opts["option2"]
 
-				if err != nil {
-					fmt.Println("Cannot send message. Error: ", err)
+				if opt1 == nil && opt2 == nil {
+					ctx.Reply("Neither option 1 nor option 2 was provided")
+				} else if opt1 == nil {
+					ctx.Reply(fmt.Sprintf("Option 1 was not provided, Option 2: %v", opt2))
+				} else if opt2 == nil {
+					ctx.Reply(fmt.Sprintf("Option 1: %v, Option 2 was not provided", opt1))
+				} else {
+					ctx.Reply(fmt.Sprintf("Option 1: %v, Option 2: %v", opt1, opt2))
 				}
 			},
 		},

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,25 +17,45 @@ func initCommands(s *discordgo.Session) {
 
 	cmds := []commandhandler.Command{
 		{
-			Name:        "ping",
-			Description: "Simple pingpong command",
+			Name:        "custom_option",
+			Description: "A command that accepts a custom option",
+			Options: []commandhandler.Option{
+				{
+					Name:        "url",
+					Description: "My custom option",
+					Required:    true,
+					Type:        urlOptionType,
+				},
+			},
 			Run: func(ctx commandhandler.Context, opts map[string]any) {
-				err := ctx.Reply("pong")
-
-				if err != nil {
-					fmt.Println("Cannot send message. Error: ", err)
-				}
+				url := opts["url"].(*url.URL)
+				ctx.Reply(fmt.Sprintf("Scheme: %s\nHost: %s\nPath: %s", url.Scheme, url.Host, url.Path))
 			},
 		},
 	}
 
-	resolver := commandhandler.NewResolver()
+	messageResolvers := commandhandler.DefaultMessageResolvers()
+	slashCommandResolvers := commandhandler.DefaultSlashCommandResolvers()
+
+	messageResolvers[urlOptionType] = urlResolver
+	slashCommandResolvers[urlOptionType] = slashCommandUrlResolver
+
+	resolver := commandhandler.SimpleResolver{
+		MessageResolvers:      messageResolvers,
+		SlashCommandResolvers: slashCommandResolvers,
+	}
 	handler := commandhandler.NewHandler(prefix, cmds, resolver)
 
 	s.AddHandler(handler.OnMessageCreate)
 	s.AddHandler(handler.OnInteractionCreate)
 
-	builder := commandhandler.NewBuilder()
+	optionsTypeMap := commandhandler.DefaultOptionsTypeMap()
+	optionsTypeMap[urlOptionType] = discordgo.ApplicationCommandOptionString
+
+	builder := commandhandler.SimpleBuilder{
+		OptionsTypeMap: optionsTypeMap,
+	}
+
 	for _, cmd := range cmds {
 		_, err := s.ApplicationCommandCreate(s.State.Application.ID, *guildId, builder.Build(cmd))
 		if err != nil {
@@ -75,4 +96,14 @@ func main() {
 	<-sc
 
 	dg.Close()
+}
+
+const urlOptionType commandhandler.OptionType = 20
+
+func urlResolver(ctx commandhandler.Context, arg string) (any, error) {
+	return url.Parse(arg)
+}
+
+func slashCommandUrlResolver(ctx commandhandler.Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
+	return url.Parse(arg.StringValue())
 }

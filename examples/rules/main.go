@@ -16,13 +16,36 @@ func initCommands(s *discordgo.Session) {
 
 	cmds := []commandhandler.Command{
 		{
-			Name:        "ping",
-			Description: "Simple pingpong command",
+			Name:        "rules",
+			Description: "A command that accepts 2 options with some rules",
+			Options: []commandhandler.Option{
+				{
+					Name:        "option1",
+					Description: "First Option",
+					Type:        commandhandler.IntegerOptionType,
+					Required:    true,
+					Rules: []commandhandler.Rule{
+						commandhandler.MinInt{Min: 2},
+						commandhandler.MaxInt{Max: 9},
+					},
+				},
+				{
+					Name:        "option2",
+					Description: "Second Option",
+					Type:        commandhandler.StringOptionType,
+					Rules: []commandhandler.Rule{
+						commandhandler.MaxString{Max: 10},
+					},
+				},
+			},
 			Run: func(ctx commandhandler.Context, opts map[string]any) {
-				err := ctx.Reply("pong")
+				opt1 := opts["option1"]
+				opt2, ok := opts["option2"]
 
-				if err != nil {
-					fmt.Println("Cannot send message. Error: ", err)
+				if ok {
+					ctx.Reply(fmt.Sprintf("Option 1: %v, Option 2: %v", opt1, opt2))
+				} else {
+					ctx.Reply(fmt.Sprintf("Option 1: %v, Option 2 was not provided", opt1))
 				}
 			},
 		},

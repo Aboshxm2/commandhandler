@@ -1,29 +1,48 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 
 	"github.com/Aboshxm2/commandhandler"
 	"github.com/bwmarrin/discordgo"
 )
 
+type ContainsDigit struct{}
+
+func (ContainsDigit) Test(value any) error {
+	if regexp.MustCompile(`\d`).MatchString(value.(string)) {
+		return nil
+	}
+
+	return errors.New("value must contain a digit")
+}
+
 func initCommands(s *discordgo.Session) {
 	const prefix = "!"
 
 	cmds := []commandhandler.Command{
 		{
-			Name:        "ping",
-			Description: "Simple pingpong command",
+			Name:        "custom_rule",
+			Description: "A command that accepts an option with custom rules",
+			Options: []commandhandler.Option{
+				{
+					Name:        "username",
+					Description: "This option must contain a digit",
+					Type:        commandhandler.StringOptionType,
+					Required:    true,
+					Rules: []commandhandler.Rule{
+						ContainsDigit{},
+					},
+				},
+			},
 			Run: func(ctx commandhandler.Context, opts map[string]any) {
-				err := ctx.Reply("pong")
-
-				if err != nil {
-					fmt.Println("Cannot send message. Error: ", err)
-				}
+				ctx.Reply("The username is " + opts["username"].(string))
 			},
 		},
 	}
