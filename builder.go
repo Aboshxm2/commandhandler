@@ -26,7 +26,7 @@ func NewBuilder() Builder {
 }
 
 type SimpleBuilder struct {
-	optionsTypeMap map[OptionType]discordgo.ApplicationCommandOptionType
+	OptionsTypeMap map[OptionType]discordgo.ApplicationCommandOptionType
 }
 
 func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOption {
@@ -34,6 +34,7 @@ func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOpti
 		Name:        opt.Name,
 		Description: opt.Description,
 		Type:        b.optionsTypeMap[opt.Type],
+    Required: opt.Required,
 	}
 
 	for _, c := range opt.Choices {
@@ -45,8 +46,6 @@ func (b SimpleBuilder) buildOption(opt Option) *discordgo.ApplicationCommandOpti
 
 	for _, rule := range opt.Rules {
 		switch r := rule.(type) {
-		case Required:
-			o.Required = true
 		case MaxInt:
 			o.MaxValue = float64(r.Max)
 		case MaxFloat:

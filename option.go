@@ -22,6 +22,7 @@ type Option struct {
 	Name        string
 	Type        OptionType
 	Description string
+  Required bool
 	Choices     []Choice
 	Rules       []Rule
 }

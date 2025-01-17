@@ -65,7 +65,7 @@ func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.Messag
 		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", opt.Name, err))
 		return
 	}
-  
+
 	cmd.Run(ctx, opts)
 }
 

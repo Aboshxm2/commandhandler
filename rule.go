@@ -13,16 +13,6 @@ type Rule interface {
 	Test(value any) error
 }
 
-type Required struct{}
-
-func (Required) Test(value any) error {
-	if value == nil {
-		return errors.New("value is required but was not provided")
-	}
-
-	return nil
-}
-
 type MaxInt struct {
 	Max int64
 }
@@ -121,11 +111,10 @@ func (r ChannelType) Test(value any) error {
 func Validate(opts []Option, values map[string]any) (Option, error) {
 	for _, opt := range opts {
 		for _, rule := range opt.Rules {
-			if values[opt.Name] == nil {
-				continue
-			}
-			if err := rule.Test(values[opt.Name]); err != nil {
-        return opt, err
+			if v, ok := values[opt.Name]; ok {
+				if err := rule.Test(v); err != nil {
+					return opt, err
+				}
 			}
 		}
 	}

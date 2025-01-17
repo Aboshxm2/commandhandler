@@ -1,6 +1,7 @@
 package commandhandler
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -32,7 +33,9 @@ func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []s
 	opts := map[string]any{}
 	for i, opt := range cmd.Options {
 		if len(args)-1 < i {
-			opts[opt.Name] = nil
+      if opt.Required {
+        return nil, errors.New("value is required but not provided")
+      }
 			continue
 		}
 
@@ -99,8 +102,6 @@ func (r SimpleResolver) ResolveSlashCommandOptions(cmd Command, ctx Context, arg
 			} else {
 				return nil, fmt.Errorf("no resolver found for option type '%v'", opt.Type)
 			}
-		} else {
-			opts[opt.Name] = nil
 		}
 	}
 
