@@ -12,6 +12,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const urlOptionType commandhandler.OptionType = 20
+
+func urlResolver(ctx commandhandler.Context, arg string) (any, error) {
+	return url.Parse(arg)
+}
+
+func slashCommandUrlResolver(ctx commandhandler.Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
+	return url.Parse(arg.StringValue())
+}
+
 func initCommands(s *discordgo.Session) {
 	const prefix = "!"
 
@@ -96,14 +106,4 @@ func main() {
 	<-sc
 
 	dg.Close()
-}
-
-const urlOptionType commandhandler.OptionType = 20
-
-func urlResolver(ctx commandhandler.Context, arg string) (any, error) {
-	return url.Parse(arg)
-}
-
-func slashCommandUrlResolver(ctx commandhandler.Context, arg discordgo.ApplicationCommandInteractionDataOption) (any, error) {
-	return url.Parse(arg.StringValue())
 }

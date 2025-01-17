@@ -11,41 +11,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var (
-	guildId = flag.String("guild", "", "Register commands in specific guild. If not passed register globally")
-	token   = flag.String("token", "", "Bot token")
-)
-
-func init() {
-	flag.Parse()
-}
-
-func main() {
-	dg, err := discordgo.New("Bot " + *token)
-	if err != nil {
-		fmt.Println("error creating Discord session,", err)
-		return
-	}
-
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
-
-	err = dg.Open()
-	if err != nil {
-		fmt.Println("error opening connection,", err)
-		return
-	}
-
-	registerCommands(dg)
-
-	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-sc
-
-	dg.Close()
-}
-
-func registerCommands(s *discordgo.Session) {
+func initCommands(s *discordgo.Session) {
 	const prefix = "!"
 
 	cmds := []commandhandler.Command{
@@ -94,4 +60,38 @@ func registerCommands(s *discordgo.Session) {
 			fmt.Println("error creating discord command,", err)
 		}
 	}
+}
+
+var (
+	guildId = flag.String("guild", "", "Register commands in specific guild. If not passed register globally")
+	token   = flag.String("token", "", "Bot token")
+)
+
+func init() {
+	flag.Parse()
+}
+
+func main() {
+	dg, err := discordgo.New("Bot " + *token)
+	if err != nil {
+		fmt.Println("error creating Discord session,", err)
+		return
+	}
+
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
+
+	err = dg.Open()
+	if err != nil {
+		fmt.Println("error opening connection,", err)
+		return
+	}
+
+	initCommands(dg)
+
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
+
+	dg.Close()
 }
