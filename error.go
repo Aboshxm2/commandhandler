@@ -2,6 +2,7 @@ package commandhandler
 
 import (
 	"errors"
+	"fmt"
 )
 
 var (
@@ -22,7 +23,7 @@ type CommandError struct {
 	Err error
 }
 
-func FormatOptionError(cmdHierarchy []string, opts []string, opt string, err error) string {
+func FormatOptionError(cmdHierarchy []string, opts []string, args map[string]any, opt string, err error) string {
 	message := "Command: "
 
 	for _, cmd := range cmdHierarchy {
@@ -30,11 +31,13 @@ func FormatOptionError(cmdHierarchy []string, opts []string, opt string, err err
 	}
 
 	for _, o := range opts {
-		if o == opt {
-			message += "**" + o + "**"
-			break
-		} else {
-			message += o + " "
+		if v, ok := args[opt]; ok {
+			if o == opt {
+				message += fmt.Sprintf("**%s:%v**", o, v)
+				break
+			} else {
+				message += fmt.Sprintf("%s:%v", o, v)
+			}
 		}
 	}
 

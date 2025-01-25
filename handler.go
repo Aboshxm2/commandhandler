@@ -44,14 +44,22 @@ func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.Messag
 	opts, optErr := h.resolver.ResolveMessageOptions(cmd, ctx, args)
 
 	if optErr.Err != nil {
-		ctx.Reply(FormatOptionError(cmdHierarchy, args, optErr.Opt, optErr.Err))
+		args := []string{}
+		for _, opt := range cmd.Options {
+			args = append(args, opt.Name)
+		}
+		ctx.Reply(FormatOptionError(cmdHierarchy, args, opts, optErr.Opt, optErr.Err))
 		return
 	}
 
 	optErr = Validate(cmd.Options, opts)
 
 	if optErr.Err != nil {
-		ctx.Reply(FormatOptionError(cmdHierarchy, args, optErr.Opt, optErr.Err))
+		args := []string{}
+		for _, opt := range cmd.Options {
+			args = append(args, opt.Name)
+		}
+		ctx.Reply(FormatOptionError(cmdHierarchy, args, opts, optErr.Opt, optErr.Err))
 		return
 	}
 
@@ -69,7 +77,7 @@ func (h SimpleHandler) OnInteractionCreate(s *discordgo.Session, i *discordgo.In
 
 	var opts map[string]any
 	var optErr OptionError
-// TODO maybe make resolver genric and parse args here just like OnMessageCreate
+
 	switch len(cmdHierarchy) {
 	case 1:
 		opts, optErr = h.resolver.ResolveSlashCommandOptions(cmd, ctx, i.ApplicationCommandData().Options)
@@ -80,22 +88,22 @@ func (h SimpleHandler) OnInteractionCreate(s *discordgo.Session, i *discordgo.In
 	}
 
 	if optErr.Err != nil {
-		opts := []string{}
+		args := []string{}
 		for _, opt := range cmd.Options {
-			opts = append(opts, opt.Name)
+			args = append(args, opt.Name)
 		}
-		ctx.Reply(FormatOptionError(cmdHierarchy, opts, optErr.Opt, optErr.Err))
+		ctx.Reply(FormatOptionError(cmdHierarchy, args, opts, optErr.Opt, optErr.Err))
 		return
 	}
 
 	optErr = Validate(cmd.Options, opts)
 
 	if optErr.Err != nil {
-		opts := []string{}
+		args := []string{}
 		for _, opt := range cmd.Options {
-			opts = append(opts, opt.Name)
+			args = append(args, opt.Name)
 		}
-		ctx.Reply(FormatOptionError(cmdHierarchy, opts, optErr.Opt, optErr.Err))
+		ctx.Reply(FormatOptionError(cmdHierarchy, args, opts, optErr.Opt, optErr.Err))
 		return
 	}
 

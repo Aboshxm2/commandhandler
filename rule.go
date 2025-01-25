@@ -113,7 +113,7 @@ func Validate(opts []Option, values map[string]any) OptionError {
 		for _, rule := range opt.Rules {
 			if v, ok := values[opt.Name]; ok {
 				if err := rule.Test(v); err != nil {
-					return OptionError{fmt.Sprint(v), err}
+					return OptionError{opt.Name, err}
 				}
 			}
 		}

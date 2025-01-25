@@ -28,12 +28,14 @@ type SimpleResolver struct {
 	SlashCommandResolvers map[OptionType]SlashCommandResolver
 }
 
-func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []string) (map[string]any, OptionError) {
-	opts := map[string]any{}
+func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []string) (opts map[string]any, optErr OptionError) {
+	opts = map[string]any{}
 	for i, opt := range cmd.Options {
 		if len(args)-1 < i {
 			if opt.Required {
-				return nil, OptionError{"", RequiredOptionError}
+				opts[opt.Name] = ""
+				optErr = OptionError{opt.Name, RequiredOptionError}
+				return
 			}
 			continue
 		}
@@ -44,22 +46,28 @@ func (r SimpleResolver) ResolveMessageOptions(cmd Command, ctx Context, args []s
 			var err error
 			arg, err = resolveMessageOptionChoices(opt, arg)
 			if err != nil {
-				return nil, OptionError{arg, err}
+				opts[opt.Name] = arg
+				optErr = OptionError{opt.Name, err}
+				return
 			}
 		}
 
 		if resolver, ok := r.MessageResolvers[opt.Type]; ok {
 			v, err := resolver(ctx, arg)
 			if err != nil {
-				return nil, OptionError{arg, fmt.Errorf("failed to resolve option '%s': %w", opt.Name, err)}
+				opts[opt.Name] = arg
+				optErr = OptionError{opt.Name, fmt.Errorf("failed to resolve option '%s': %w", opt.Name, err)}
+				return
 			}
 
 			opts[opt.Name] = v
 		} else {
-			return nil, OptionError{arg, fmt.Errorf("no resolver found for option type '%v'", opt.Type)}
+			opts[opt.Name] = arg
+			optErr = OptionError{opt.Name, fmt.Errorf("no resolver found for option type '%v'", opt.Type)}
+			return
 		}
 	}
-	return opts, OptionError{}
+	return
 }
 
 func resolveMessageOptionChoices(opt Option, arg string) (string, error) {
@@ -79,11 +87,11 @@ func resolveMessageOptionChoices(opt Option, arg string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("value '%v' is not a valid choice", arg)
+	return arg, fmt.Errorf("value '%v' is not a valid choice", arg)
 }
 
-func (r SimpleResolver) ResolveSlashCommandOptions(cmd Command, ctx Context, args []*discordgo.ApplicationCommandInteractionDataOption) (map[string]any, OptionError) {
-	opts := map[string]any{}
+func (r SimpleResolver) ResolveSlashCommandOptions(cmd Command, ctx Context, args []*discordgo.ApplicationCommandInteractionDataOption) (opts map[string]any, optErr OptionError) {
+	opts = map[string]any{}
 	for _, opt := range cmd.Options {
 		var found *discordgo.ApplicationCommandInteractionDataOption
 		for _, arg := range args {
@@ -95,11 +103,15 @@ func (r SimpleResolver) ResolveSlashCommandOptions(cmd Command, ctx Context, arg
 			if resolver, ok := r.SlashCommandResolvers[opt.Type]; ok {
 				v, err := resolver(ctx, *found)
 				if err != nil {
-					return nil, OptionError{fmt.Sprint(found.Value), fmt.Errorf("failed to resolve option '%s': %w", opt.Name, err)}
+					opts[opt.Name] = found
+					optErr = OptionError{opt.Name, fmt.Errorf("failed to resolve option '%s': %w", opt.Name, err)}
+					return
 				}
 				opts[opt.Name] = v
 			} else {
-				return nil, OptionError{fmt.Sprint(found.Value), fmt.Errorf("no resolver found for option type '%v'", opt.Type)}
+				opts[opt.Name] = found
+				optErr = OptionError{opt.Name, fmt.Errorf("no resolver found for option type '%v'", opt.Type)}
+				return
 			}
 		}
 	}
