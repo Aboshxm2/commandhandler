@@ -1,8 +1,6 @@
 package commandhandler
 
 import (
-	"errors"
-	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -11,7 +9,6 @@ import (
 )
 
 type Handler interface {
-	Register(cmd Command)
 	OnMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate)
 	OnInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate)
 }
@@ -22,16 +19,10 @@ func NewHandler(prefix string, cmds []Command, resolver Resolver) Handler {
 	}
 }
 
-var errNotFound = errors.New("command not found")
-
 type SimpleHandler struct {
 	resolver Resolver
 	prefix   string
 	cmds     []Command
-}
-
-func (h SimpleHandler) Register(cmd Command) {
-	h.cmds = append(h.cmds, cmd)
 }
 
 func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -41,28 +32,26 @@ func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.Messag
 
 	args := getArgs(m.Content, h.prefix)
 
-	cmd, args, err := findCommand(h.cmds, args, 1)
+	cmd, cmdHierarchy, args, cmdErr := parseArgs(h.cmds, args)
 
 	ctx := MessageToContext(s, m.Message)
 
-	if err != nil {
-		if err != errNotFound {
-			ctx.Reply("Error: " + err.Error())
-		}
+	if cmdErr.Err != nil {
+		ctx.Reply(FormatCommandError(cmdHierarchy, cmdErr.Cmd, cmdErr.Err))
 		return
 	}
 
-	opts, err := h.resolver.ResolveMessageOptions(cmd, ctx, args)
+	opts, optErr := h.resolver.ResolveMessageOptions(cmd, ctx, args)
 
-	if err != nil {
-		ctx.Reply("Error: " + err.Error())
+	if optErr.Err != nil {
+		ctx.Reply(FormatOptionError(cmdHierarchy, args, optErr.Opt, optErr.Err))
 		return
 	}
 
-	opt, err := Validate(cmd.Options, opts)
+	optErr = Validate(cmd.Options, opts)
 
-	if err != nil {
-		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", opt.Name, err))
+	if optErr.Err != nil {
+		ctx.Reply(FormatOptionError(cmdHierarchy, args, optErr.Opt, optErr.Err))
 		return
 	}
 
@@ -70,28 +59,57 @@ func (h SimpleHandler) OnMessageCreate(s *discordgo.Session, m *discordgo.Messag
 }
 
 func (h SimpleHandler) OnInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	cmd, err := findSlashCommandSubCommand(h.cmds, i)
-
-	if err != nil {
-		return
-	}
-
 	ctx := SlashCommandToContext(s, i)
 
-	opts, err := h.resolver.ResolveSlashCommandOptions(cmd, ctx, i.ApplicationCommandData())
-	if err != nil {
-		ctx.Reply("Error: " + err.Error())
+	cmd, cmdHierarchy, cmdErr := parseSlashCommandArgs(h.cmds, i)
+	if cmdErr.Err != nil {
+		ctx.Reply(FormatCommandError(cmdHierarchy, cmdErr.Cmd, cmdErr.Err))
 		return
 	}
 
-	opt, err := Validate(cmd.Options, opts)
+	var opts map[string]any
+	var optErr OptionError
+// TODO maybe make resolver genric and parse args here just like OnMessageCreate
+	switch len(cmdHierarchy) {
+	case 1:
+		opts, optErr = h.resolver.ResolveSlashCommandOptions(cmd, ctx, i.ApplicationCommandData().Options)
+	case 2:
+		opts, optErr = h.resolver.ResolveSlashCommandOptions(cmd, ctx, i.ApplicationCommandData().Options[0].Options)
+	case 3:
+		opts, optErr = h.resolver.ResolveSlashCommandOptions(cmd, ctx, i.ApplicationCommandData().Options[0].Options[0].Options)
+	}
 
-	if err != nil {
-		ctx.Reply(fmt.Sprintf("An error has occurred in option '%s'. Error: %s", opt.Name, err))
+	if optErr.Err != nil {
+		opts := []string{}
+		for _, opt := range cmd.Options {
+			opts = append(opts, opt.Name)
+		}
+		ctx.Reply(FormatOptionError(cmdHierarchy, opts, optErr.Opt, optErr.Err))
+		return
+	}
+
+	optErr = Validate(cmd.Options, opts)
+
+	if optErr.Err != nil {
+		opts := []string{}
+		for _, opt := range cmd.Options {
+			opts = append(opts, opt.Name)
+		}
+		ctx.Reply(FormatOptionError(cmdHierarchy, opts, optErr.Opt, optErr.Err))
 		return
 	}
 
 	cmd.Run(ctx, opts)
+}
+
+func findCommand(cmds []Command, name string) (Command, bool) {
+	for _, cmd := range cmds {
+		if cmd.Name == name || slices.Contains(cmd.Aliases, name) {
+			return cmd, true
+		}
+	}
+
+	return Command{}, false
 }
 
 func getArgs(message string, prefix string) []string {
@@ -109,44 +127,67 @@ func getArgs(message string, prefix string) []string {
 	return args
 }
 
-func findCommand(cmds []Command, args []string, depth int) (Command, []string, error) {
-	for _, cmd := range cmds {
-		if cmd.Name == args[0] || slices.Contains(cmd.Aliases, args[0]) {
-			if len(cmd.Subs) > 0 {
-				if len(args) > 1 {
-					depth++
-					findCommand(cmd.Subs, args[1:], depth)
-				} else {
-					return Command{}, nil, errors.New("subcommand expected but not provided")
-				}
-			} else {
-				return cmd, args[1:], nil
+func parseArgs(cmds []Command, args []string) (lastCmd Command, cmdHierarchy []string, newArgs []string, err CommandError) {
+	for _, arg := range args {
+		cmd, ok := findCommand(cmds, arg)
+		if !ok {
+			if len(lastCmd.Subs) > 0 {
+				err = CommandError{arg, InvalidSubCommandError}
+				return
 			}
+			break
+		}
+
+		lastCmd = cmd
+		cmdHierarchy = append(cmdHierarchy, arg)
+		cmds = cmd.Subs
+
+		if len(lastCmd.Subs) == 0 {
+			break
 		}
 	}
 
-	if depth != 1 {
-		return Command{}, nil, fmt.Errorf("subcommand '%s' does not exist", args[0])
+	if len(lastCmd.Subs) > 0 {
+		err = CommandError{"", RequiredSubCommandError}
+		return
 	}
 
-	return Command{}, nil, errNotFound
+	newArgs = args[len(cmdHierarchy):]
+
+	return
 }
 
-func findSlashCommandSubCommand(cmds []Command, i *discordgo.InteractionCreate) (Command, error) {
+func parseSlashCommandArgs(cmds []Command, i *discordgo.InteractionCreate) (cmd Command, cmdHierarchy []string, err CommandError) {
 	d := i.ApplicationCommandData()
-	var name string
+
 	if len(d.Options) == 0 || (d.Options[0].Type != discordgo.ApplicationCommandOptionSubCommandGroup && d.Options[0].Type != discordgo.ApplicationCommandOptionSubCommand) {
-		name = d.Name
-	} else if d.Options[0].Type == discordgo.ApplicationCommandOptionSubCommandGroup {
-		name = d.Options[0].Options[0].Name
-	} else {
-		name = d.Options[0].Name
-	}
-	for _, cmd := range cmds {
-		if cmd.Name == name {
-			return cmd, nil
+		c, ok := findCommand(cmds, d.Name)
+		if !ok {
+			err.Err = CommandNotFoundError
+			return
 		}
+		cmdHierarchy = append(cmdHierarchy, c.Name)
+		cmd = c
+	} else if d.Options[0].Type == discordgo.ApplicationCommandOptionSubCommandGroup {
+		c1, ok1 := findCommand(cmds, d.Name)
+		c2, ok2 := findCommand(c1.Subs, d.Options[0].Name)
+		c3, ok3 := findCommand(c2.Subs, d.Options[0].Options[0].Name)
+		if !ok1 || !ok2 || !ok3 {
+			err.Err = CommandNotFoundError
+			return
+		}
+		cmdHierarchy = append(cmdHierarchy, c1.Name, c2.Name, c3.Name)
+		cmd = c3
+	} else {
+		c1, ok1 := findCommand(cmds, d.Name)
+		c2, ok2 := findCommand(c1.Subs, d.Options[0].Name)
+		if !ok1 || !ok2 {
+			err.Err = CommandNotFoundError
+			return
+		}
+		cmdHierarchy = append(cmdHierarchy, c1.Name, c2.Name)
+		cmd = c2
 	}
 
-	return Command{}, errNotFound
+	return
 }

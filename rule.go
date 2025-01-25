@@ -108,15 +108,15 @@ func (r ChannelType) Test(value any) error {
 	return fmt.Errorf("channel type '%v' is not allowed", value.(*discordgo.Channel).Type)
 }
 
-func Validate(opts []Option, values map[string]any) (Option, error) {
+func Validate(opts []Option, values map[string]any) OptionError {
 	for _, opt := range opts {
 		for _, rule := range opt.Rules {
 			if v, ok := values[opt.Name]; ok {
 				if err := rule.Test(v); err != nil {
-					return opt, err
+					return OptionError{fmt.Sprint(v), err}
 				}
 			}
 		}
 	}
-	return Option{}, nil
+	return OptionError{}
 }
