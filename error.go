@@ -36,7 +36,7 @@ func FormatOptionError(cmdHierarchy []string, opts []string, args map[string]any
 				message += fmt.Sprintf("**%s:%v**", o, v)
 				break
 			} else {
-				message += fmt.Sprintf("%s:%v", o, v)
+				message += fmt.Sprintf("%s:%v ", o, v)
 			}
 		}
 	}
